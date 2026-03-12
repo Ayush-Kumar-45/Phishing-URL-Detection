@@ -263,7 +263,24 @@ def not_found_error(error):
 def internal_error(error):
     logging.error(f"Server Error: {error}")
     return render_template('500.html'), 500
-
+@app.route('/debug/paths')
+def debug_paths():
+    """Debug endpoint to check file paths"""
+    import os
+    import sys
+    
+    result = {
+        'current_working_dir': os.getcwd(),
+        'python_path': sys.path,
+        'files_in_current_dir': os.listdir('.'),
+        'files_in_root': os.listdir('/') if os.path.exists('/') else [],
+        'model_exists': os.path.exists('phishing_model.pkl'),
+        'model_absolute_path': os.path.abspath('phishing_model.pkl') if os.path.exists('phishing_model.pkl') else 'Not found',
+        'model_size': os.path.getsize('phishing_model.pkl') if os.path.exists('phishing_model.pkl') else 0,
+        'utils_exists': os.path.exists('utils'),
+        'utils_files': os.listdir('utils') if os.path.exists('utils') else [],
+    }
+    return jsonify(result)
 if __name__ == '__main__':
     # Create logs directory if it doesn't exist
     os.makedirs('logs', exist_ok=True)
