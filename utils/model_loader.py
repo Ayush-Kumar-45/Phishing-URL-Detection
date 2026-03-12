@@ -96,3 +96,31 @@ class DummyScaler:
     
     def inverse_transform(self, X):
         return X
+
+def get_model_info():
+    """Get information about the loaded model"""
+    try:
+        # This is a simplified version - you can expand it
+        model, scaler = load_model_and_scaler()
+        
+        info = {
+            'model_type': type(model).__name__,
+            'scaler_type': type(scaler).__name__,
+        }
+        
+        # Try to get model parameters if available
+        if hasattr(model, 'get_params'):
+            info['model_params'] = str(model.get_params())
+        
+        # Get feature count if available
+        if hasattr(model, 'n_features_in_'):
+            info['n_features_in'] = model.n_features_in_
+        elif hasattr(model, 'n_features_'):
+            info['n_features_in'] = model.n_features_
+        else:
+            info['n_features_in'] = 'unknown'
+        
+        return info
+    except Exception as e:
+        print(f"Error getting model info: {str(e)}")
+        return {'error': str(e)}
