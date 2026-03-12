@@ -1,57 +1,86 @@
-# utils/model_loader.py
 import pickle
 import os
 import logging
-import numpy as np
+import sys
 
 def load_model_and_scaler():
     """
-    Load the trained phishing detection model
-    If scaler is not available, create a dummy scaler that returns features unchanged
+    Load the trained phishing detection model with absolute path
     """
     try:
-        # Get the absolute path to the project root
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Get the absolute path - In Docker, it's usually /app
+        base_dir = '/app'  # Docker container working directory
         model_path = os.path.join(base_dir, 'phishing_model.pkl')
         scaler_path = os.path.join(base_dir, 'scaler.pkl')
         
+        # Print debug info (will show in Render logs)
+        print(f"=== MODEL LOADING DEBUG ===")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Base directory: {base_dir}")
+        print(f"Model path: {model_path}")
+        print(f"Files in /app: {os.listdir('/app') if os.path.exists('/app') else 'Not found'}")
+        
         # Check if model file exists
         if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found at {model_path}")
+            # Try alternative paths
+            alt_paths = [
+                './phishing_model.pkl',
+                '../phishing_model.pkl',
+                'phishing_model.pkl',
+                '/app/phishing_model.pkl'
+            ]
+            
+            for alt_path in alt_paths:
+                if os.path.exists(alt_path):
+                    model_path = alt_path
+                    print(f"Found model at: {model_path}")
+                    break
+            else:
+                # List all files to help debug
+                all_files = []
+                for root, dirs, files in os.walk('/app'):
+                    for file in files:
+                        if file.endswith('.pkl'):
+                            all_files.append(os.path.join(root, file))
+                print(f"All .pkl files found: {all_files}")
+                
+                raise FileNotFoundError(f"Model file not found. Tried: {model_path} and {alt_paths}")
         
         # Check file size
-        if os.path.getsize(model_path) == 0:
+        file_size = os.path.getsize(model_path)
+        print(f"Model file size: {file_size} bytes")
+        
+        if file_size == 0:
             raise ValueError(f"Model file is empty: {model_path}")
         
         # Load model
-        logging.info(f"Loading model from {model_path}")
+        print(f"Loading model from {model_path}")
         with open(model_path, 'rb') as model_file:
             model = pickle.load(model_file)
         
-        logging.info(f"Model loaded successfully. Type: {type(model).__name__}")
+        print(f"Model loaded successfully. Type: {type(model).__name__}")
         
-        # Try to load scaler, if not available create a dummy scaler
+        # Try to load scaler
         if os.path.exists(scaler_path) and os.path.getsize(scaler_path) > 0:
-            logging.info(f"Loading scaler from {scaler_path}")
+            print(f"Loading scaler from {scaler_path}")
             with open(scaler_path, 'rb') as scaler_file:
                 scaler = pickle.load(scaler_file)
-            logging.info("Scaler loaded successfully")
+            print("Scaler loaded successfully")
         else:
-            # Create a dummy scaler that returns the input unchanged
+            # Create a dummy scaler
             scaler = DummyScaler()
-            logging.warning("Scaler file not found or empty. Using DummyScaler (no scaling applied)")
+            print("Scaler file not found. Using DummyScaler")
         
+        print("=== MODEL LOADING COMPLETE ===")
         return model, scaler
     
     except Exception as e:
+        print(f"ERROR loading model: {str(e)}")
         logging.error(f"Error loading model/scaler: {str(e)}")
         raise
 
 class DummyScaler:
-    """
-    A dummy scaler that returns the input unchanged
-    This is used when the original scaler file is not available
-    """
+    """A dummy scaler that returns the input unchanged"""
     def __init__(self):
         self.mean_ = None
         self.scale_ = None
@@ -67,30 +96,3 @@ class DummyScaler:
     
     def inverse_transform(self, X):
         return X
-
-def get_model_info():
-    """Get information about the loaded model"""
-    try:
-        model, scaler = load_model_and_scaler()
-        
-        info = {
-            'model_type': type(model).__name__,
-            'scaler_type': type(scaler).__name__,
-        }
-        
-        # Try to get model parameters if available
-        if hasattr(model, 'get_params'):
-            info['model_params'] = model.get_params()
-        
-        # Get feature count if available
-        if hasattr(model, 'n_features_in_'):
-            info['n_features_in'] = model.n_features_in_
-        elif hasattr(model, 'n_features_'):
-            info['n_features_in'] = model.n_features_
-        else:
-            info['n_features_in'] = 'unknown'
-        
-        return info
-    except Exception as e:
-        logging.error(f"Error getting model info: {str(e)}")
-        return {'error': str(e)}
