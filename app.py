@@ -1,359 +1,155 @@
+import pickle
 import os
+import sys
+import gzip
 import logging
-from flask import Flask, render_template, request, jsonify, session
-from utils.model_loader import load_model_and_scaler, DummyScaler
-from utils.feature_extractor import extract_features, get_feature_names
-import numpy as np
-from datetime import timedelta
-import secrets
-import traceback
 
-# Configure logging
-log_dir = 'logs'
-os.makedirs(log_dir, exist_ok=True)
-
-logging.basicConfig(
-    filename=os.path.join(log_dir, 'app.log'),
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-
-app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)
-app.permanent_session_lifetime = timedelta(minutes=30)
-
-# Load model and scaler at startup
-try:
-    MODEL, SCALER = load_model_and_scaler()
-    logging.info("Application started successfully")
+def find_model_file():
+    """Search for model file in all possible locations"""
+    possible_paths = [
+        '/app/phishing_model.pkl',
+        '/app/phishing_model.pkl.gz',
+        '/app/model/phishing_model.pkl',
+        '/app/src/phishing_model.pkl',
+        './phishing_model.pkl',
+        '../phishing_model.pkl',
+        'phishing_model.pkl',
+        '/opt/render/project/src/phishing_model.pkl',
+        '/opt/render/project/src/phishing_model.pkl.gz',
+    ]
     
-    # Verify feature count
-    if hasattr(MODEL, 'n_features_in_'):
-        expected_features = MODEL.n_features_in_
-        logging.info(f"Model expects {expected_features} features")
-        if expected_features != 23:
-            logging.warning(f"Model expects {expected_features} features, but code uses 23")
-    else:
-        logging.info("Model doesn't expose n_features_in_, assuming it expects 23 features")
+    print("\n=== SEARCHING FOR MODEL FILE ===")
+    sys.stdout.flush()
     
-except Exception as e:
-    logging.error(f"Failed to load model: {str(e)}")
-    logging.error(traceback.format_exc())
-    MODEL = None
-    SCALER = None
-
-@app.route('/')
-def index():
-    """Home page"""
-    if MODEL is None:
-        return render_template('error.html', 
-                             error="Model not loaded. Please check the logs.",
-                             details="The machine learning model could not be loaded.")
-    return render_template('index.html')
-
-@app.route('/about')
-def about():
-    """About page"""
-    return render_template('about.html')
-
-@app.route('/predict', methods=['POST'])
-def predict():
-    """Predict if a URL is phishing or legitimate"""
-    try:
-        # Check if model is loaded
-        if MODEL is None:
-            return render_template('result.html', 
-                                 error="System is not ready. Please try again later.",
-                                 url=request.form.get('url', ''))
-        
-        # Get URL from form
-        url = request.form.get('url', '').strip()
-        
-        if not url:
-            return render_template('result.html', 
-                                 error="Please enter a URL",
-                                 url=url)
-        
-        # Add http:// if missing
-        if not url.startswith(('http://', 'https://')):
-            url = 'http://' + url
-        
-        # Log the prediction request
-        logging.info(f"Predicting URL: {url}")
-        
-        # Extract features from URL
-        features = extract_features(url)
-        
-        # Get feature names in correct order
-        feature_names = get_feature_names()
-        
-        # Create feature array in correct order
-        feature_values = [features.get(name, 0) for name in feature_names]
-        feature_array = np.array([feature_values])
-        
-        logging.info(f"Feature array shape: {feature_array.shape}")
-        logging.info(f"First 5 feature values: {feature_values[:5]}")
-        
-        # Scale features (if scaler is available, otherwise use as is)
-        if SCALER is not None and not isinstance(SCALER, DummyScaler):
-            features_scaled = SCALER.transform(feature_array)
-        else:
-            features_scaled = feature_array
-        
-        # Make prediction
-        if hasattr(MODEL, 'predict_proba'):
-            prediction = MODEL.predict(features_scaled)[0]
-            probabilities = MODEL.predict_proba(features_scaled)[0]
-            
-            if prediction == 1:
-                confidence = float(probabilities[1] * 100)
-            else:
-                confidence = float(probabilities[0] * 100)
-        else:
-            # For models without predict_proba
-            prediction = MODEL.predict(features_scaled)[0]
-            confidence = 95.0  # Default confidence
-        
-        # Interpret result
-        if prediction == 1:
-            result = "phishing"
-            message = "⚠️ WARNING: This URL appears to be a PHISHING website!"
-            alert_class = "alert-danger"
-            icon = "fa-exclamation-triangle"
-        else:
-            result = "legitimate"
-            message = "✅ SAFE: This URL appears to be LEGITIMATE"
-            alert_class = "alert-success"
-            icon = "fa-check-circle"
-        
-        # Log prediction result
-        logging.info(f"Prediction for {url}: {result} (confidence: {confidence:.2f}%)")
-        
-        # Store in session for history
-        if 'history' not in session:
-            session['history'] = []
-        
-        session['history'].append({
-            'url': url[:50] + '...' if len(url) > 50 else url,
-            'result': result,
-            'confidence': f"{confidence:.2f}%"
-        })
-        session.modified = True
-        
-        return render_template('result.html',
-                             url=url,
-                             result=result,
-                             confidence=f"{confidence:.2f}",
-                             message=message,
-                             alert_class=alert_class,
-                             icon=icon,
-                             features=features)
+    for path in possible_paths:
+        if os.path.exists(path):
+            file_size = os.path.getsize(path)
+            print(f"✓ FOUND: {path} (Size: {file_size} bytes)")
+            sys.stdout.flush()
+            return path
     
-    except Exception as e:
-        logging.error(f"Error predicting URL: {str(e)}")
-        logging.error(traceback.format_exc())
-        return render_template('result.html',
-                             error=f"An error occurred: {str(e)}",
-                             url=url if 'url' in locals() else '')
-
-@app.route('/api/predict', methods=['POST'])
-def api_predict():
-    """API endpoint for predictions"""
-    try:
-        if MODEL is None:
-            return jsonify({'error': 'Model not loaded'}), 503
-        
-        data = request.get_json()
-        url = data.get('url', '').strip()
-        
-        if not url:
-            return jsonify({'error': 'No URL provided'}), 400
-        
-        # Add http:// if missing
-        if not url.startswith(('http://', 'https://')):
-            url = 'http://' + url
-        
-        # Extract features
-        features = extract_features(url)
-        feature_names = get_feature_names()
-        feature_values = [features.get(name, 0) for name in feature_names]
-        feature_array = np.array([feature_values])
-        
-        if SCALER is not None and not isinstance(SCALER, DummyScaler):
-            features_scaled = SCALER.transform(feature_array)
-        else:
-            features_scaled = feature_array
-            
-        prediction = MODEL.predict(features_scaled)[0]
-        
-        if hasattr(MODEL, 'predict_proba'):
-            probabilities = MODEL.predict_proba(features_scaled)[0]
-            confidence = float(probabilities[1] if prediction == 1 else probabilities[0])
-        else:
-            confidence = 0.95
-        
-        return jsonify({
-            'success': True,
-            'url': url,
-            'prediction': 'phishing' if prediction == 1 else 'legitimate',
-            'confidence': confidence,
-            'features': {name: features.get(name, 0) for name in feature_names[:10]}  # Return first 10 features
-        })
+    # If not found in common paths, search entire /app directory
+    print("\nSearching entire /app directory...")
+    sys.stdout.flush()
     
-    except Exception as e:
-        logging.error(f"API error: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/history')
-def history():
-    """View prediction history"""
-    history_list = session.get('history', [])
-    return render_template('history.html', history=history_list)
-
-@app.route('/clear-history', methods=['POST'])
-def clear_history():
-    """Clear prediction history"""
-    session.pop('history', None)
-    return jsonify({'success': True})
-
-@app.route('/health')
-def health():
-    """Health check endpoint"""
-    if MODEL is None:
-        return jsonify({'status': 'degraded', 'message': 'Model not loaded'}), 503
-    
-    expected_features = MODEL.n_features_in_ if hasattr(MODEL, 'n_features_in_') else 'unknown'
-    
-    return jsonify({
-        'status': 'healthy',
-        'model_loaded': True,
-        'model_type': type(MODEL).__name__,
-        'scaler_loaded': SCALER is not None and not isinstance(SCALER, DummyScaler),
-        'expected_features': expected_features,
-        'features_provided': 23
-    })
-@app.route('/debug/files')
-def debug_files():
-    """Comprehensive file debugging"""
-    import os
-    import subprocess
-    
-    result = {
-        'current_dir': os.getcwd(),
-        'current_dir_files': os.listdir('.'),
-        'app_dir_files': os.listdir('/app') if os.path.exists('/app') else [],
-    }
-    
-    # Search for .pkl files
-    pkl_files = []
     for root, dirs, files in os.walk('/app'):
         for file in files:
             if file.endswith('.pkl') or file.endswith('.pkl.gz'):
                 full_path = os.path.join(root, file)
-                pkl_files.append({
-                    'path': full_path,
-                    'size': os.path.getsize(full_path),
-                    'exists': os.path.exists(full_path)
-                })
+                file_size = os.path.getsize(full_path)
+                print(f"✓ FOUND: {full_path} (Size: {file_size} bytes)")
+                sys.stdout.flush()
+                return full_path
     
-    result['pkl_files'] = pkl_files
-    
-    # Try to get disk usage
+    return None
+
+def load_model_and_scaler():
+    """
+    Load the trained phishing detection model with robust path searching
+    """
     try:
-        result['disk_usage'] = subprocess.check_output(['df', '-h']).decode('utf-8')
-    except:
-        pass
-    
-    return jsonify(result)
-
-@app.route('/debug/download')
-def debug_download():
-    """Try to download model from GitHub"""
-    import urllib.request
-    import os
-    
-    github_url = "https://github.com/Ayush-Kumar-45/Phishing-URL-Detection/raw/master/phishing_model.pkl"
-    local_path = "/app/phishing_model_downloaded.pkl"
-    
-    try:
-        urllib.request.urlretrieve(github_url, local_path)
-        return jsonify({
-            'success': True,
-            'message': 'Model downloaded successfully',
-            'size': os.path.getsize(local_path),
-            'path': local_path
-        })
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        })
-@app.route('/debug/features')
-def debug_features():
-    """Debug endpoint to check feature extraction"""
-    url = request.args.get('url', 'https://example.com')
-    
-    # Add http:// if missing
-    if not url.startswith(('http://', 'https://')):
-        url = 'http://' + url
-    
-    features = extract_features(url)
-    feature_names = get_feature_names()
-    feature_values = [features.get(name, 0) for name in feature_names]
-    
-    return jsonify({
-        'url': url,
-        'features': features,
-        'feature_count': len(features),
-        'feature_names': feature_names,
-        'feature_values': feature_values,
-        'feature_values_preview': feature_values[:5]
-    })
-
-@app.errorhandler(404)
-def not_found_error(error):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    logging.error(f"Server Error: {error}")
-    return render_template('500.html'), 500
-@app.route('/debug/paths')
-def debug_paths():
-    """Debug endpoint to check file paths"""
-    import os
-    import sys
-    
-    result = {
-        'current_working_dir': os.getcwd(),
-        'python_path': sys.path,
-        'files_in_current_dir': os.listdir('.'),
-        'files_in_root': os.listdir('/') if os.path.exists('/') else [],
-        'model_exists': os.path.exists('phishing_model.pkl'),
-        'model_absolute_path': os.path.abspath('phishing_model.pkl') if os.path.exists('phishing_model.pkl') else 'Not found',
-        'model_size': os.path.getsize('phishing_model.pkl') if os.path.exists('phishing_model.pkl') else 0,
-        'utils_exists': os.path.exists('utils'),
-        'utils_files': os.listdir('utils') if os.path.exists('utils') else [],
-    }
-    return jsonify(result)
-if __name__ == '__main__':
-    # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
-    print("=" * 50)
-    print("Phishing URL Detection System")
-    print("=" * 50)
-    print(f"Model loaded: {MODEL is not None}")
-    if MODEL is not None:
-        if hasattr(MODEL, 'n_features_in_'):
-            print(f"Model expects: {MODEL.n_features_in_} features")
-            print(f"Code provides: 23 features")
-            if MODEL.n_features_in_ != 23:
-                print("⚠️  WARNING: Feature count mismatch!")
+        # Print debug info
+        print("\n" + "="*50)
+        print("MODEL LOADING DEBUG")
+        print("="*50)
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Python version: {sys.version}")
+        print(f"Files in current directory: {os.listdir('.')}")
+        sys.stdout.flush()
+        
+        # Find model file
+        model_path = find_model_file()
+        
+        if model_path is None:
+            error_msg = "Could not find phishing_model.pkl anywhere in the container"
+            print(f"❌ {error_msg}")
+            sys.stdout.flush()
+            raise FileNotFoundError(error_msg)
+        
+        # Load model (handle compressed files)
+        print(f"\nLoading model from: {model_path}")
+        sys.stdout.flush()
+        
+        if model_path.endswith('.gz'):
+            with gzip.open(model_path, 'rb') as f:
+                model = pickle.load(f)
         else:
-            print(f"Model type: {type(MODEL).__name__}")
-            print("Code provides: 23 features")
-    print(f"Scaler loaded: {SCALER is not None and not isinstance(SCALER, DummyScaler)}")
-    print("-" * 50)
-    print("Access the application at http://localhost:5000")
-    print("=" * 50)
-    app.run(debug=True, host='0.0.0.0', port=5000)
+            with open(model_path, 'rb') as f:
+                model = pickle.load(f)
+        
+        print(f"✓ Model loaded successfully!")
+        print(f"  Type: {type(model).__name__}")
+        sys.stdout.flush()
+        
+        # Get model features
+        if hasattr(model, 'n_features_in_'):
+            print(f"  Features expected: {model.n_features_in_}")
+        elif hasattr(model, 'n_features_'):
+            print(f"  Features expected: {model.n_features_}")
+        sys.stdout.flush()
+        
+        # Try to load scaler
+        scaler_path = '/app/scaler.pkl'
+        if os.path.exists(scaler_path) and os.path.getsize(scaler_path) > 0:
+            with open(scaler_path, 'rb') as f:
+                scaler = pickle.load(f)
+            print("✓ Scaler loaded successfully")
+        else:
+            scaler = DummyScaler()
+            print("ℹ️ Using DummyScaler (no scaling)")
+        
+        sys.stdout.flush()
+        print("="*50 + "\n")
+        sys.stdout.flush()
+        
+        return model, scaler
+    
+    except Exception as e:
+        print(f"\n❌ ERROR loading model: {str(e)}")
+        import traceback
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
+        raise
+
+class DummyScaler:
+    """A dummy scaler that returns the input unchanged"""
+    def __init__(self):
+        self.mean_ = None
+        self.scale_ = None
+    
+    def transform(self, X):
+        return X
+    
+    def fit_transform(self, X):
+        return X
+    
+    def fit(self, X):
+        return self
+    
+    def inverse_transform(self, X):
+        return X
+
+def get_model_info():
+    """Get information about the loaded model"""
+    try:
+        model, scaler = load_model_and_scaler()
+        
+        info = {
+            'model_type': type(model).__name__,
+            'scaler_type': type(scaler).__name__,
+        }
+        
+        if hasattr(model, 'get_params'):
+            info['model_params'] = str(model.get_params())
+        
+        if hasattr(model, 'n_features_in_'):
+            info['n_features_in'] = model.n_features_in_
+        elif hasattr(model, 'n_features_'):
+            info['n_features_in'] = model.n_features_
+        
+        if hasattr(model, 'classes_'):
+            info['classes'] = str(model.classes_)
+        
+        return info
+    except Exception as e:
+        return {'error': str(e)}
