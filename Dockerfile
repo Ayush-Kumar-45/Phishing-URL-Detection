@@ -23,16 +23,22 @@ COPY . .
 # Create logs directory
 RUN mkdir -p logs
 
-# List files to verify model is copied
-RUN echo "=== FILES IN /APP ===" && ls -la /app/
-RUN echo "=== FILES IN UTILS ===" && ls -la /app/utils/ || echo "utils directory not found"
-RUN echo "=== CHECKING MODEL FILE ===" && ls -la /app/*.pkl || echo "No .pkl files found"
+# Debug: List all files to verify model is copied
+RUN echo "\n=== CONTAINER FILE STRUCTURE ===" && \
+    echo "\n=== Files in /app ===" && \
+    ls -la /app/ && \
+    echo "\n=== Files in /app/utils ===" && \
+    ls -la /app/utils/ || echo "utils directory not found" && \
+    echo "\n=== Looking for .pkl files ===" && \
+    find /app -name "*.pkl" -o -name "*.pkl.gz" | xargs ls -la || echo "No .pkl files found" && \
+    echo "\n=== File sizes ===" && \
+    du -sh /app/* 2>/dev/null || true
 
-# Ensure model file has correct permissions
-RUN chmod 644 /app/phishing_model.pkl || echo "Model file not found for chmod"
+# Set permissions
+RUN chmod -R 755 /app
 
 # Expose port
 EXPOSE 10000
 
 # Run the application
-CMD gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120
+CMD gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level debug
