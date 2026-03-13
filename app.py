@@ -232,7 +232,62 @@ def health():
         'expected_features': expected_features,
         'features_provided': 23
     })
+@app.route('/debug/files')
+def debug_files():
+    """Comprehensive file debugging"""
+    import os
+    import subprocess
+    
+    result = {
+        'current_dir': os.getcwd(),
+        'current_dir_files': os.listdir('.'),
+        'app_dir_files': os.listdir('/app') if os.path.exists('/app') else [],
+    }
+    
+    # Search for .pkl files
+    pkl_files = []
+    for root, dirs, files in os.walk('/app'):
+        for file in files:
+            if file.endswith('.pkl') or file.endswith('.pkl.gz'):
+                full_path = os.path.join(root, file)
+                pkl_files.append({
+                    'path': full_path,
+                    'size': os.path.getsize(full_path),
+                    'exists': os.path.exists(full_path)
+                })
+    
+    result['pkl_files'] = pkl_files
+    
+    # Try to get disk usage
+    try:
+        result['disk_usage'] = subprocess.check_output(['df', '-h']).decode('utf-8')
+    except:
+        pass
+    
+    return jsonify(result)
 
+@app.route('/debug/download')
+def debug_download():
+    """Try to download model from GitHub"""
+    import urllib.request
+    import os
+    
+    github_url = "https://github.com/Ayush-Kumar-45/Phishing-URL-Detection/raw/master/phishing_model.pkl"
+    local_path = "/app/phishing_model_downloaded.pkl"
+    
+    try:
+        urllib.request.urlretrieve(github_url, local_path)
+        return jsonify({
+            'success': True,
+            'message': 'Model downloaded successfully',
+            'size': os.path.getsize(local_path),
+            'path': local_path
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 @app.route('/debug/features')
 def debug_features():
     """Debug endpoint to check feature extraction"""
