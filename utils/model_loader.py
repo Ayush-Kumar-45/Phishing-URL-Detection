@@ -1,8 +1,8 @@
 import pickle
 import os
-import logging
 import sys
 import gzip
+import logging
 
 def find_model_file():
     """Search for model file in all possible locations"""
@@ -16,24 +16,29 @@ def find_model_file():
         'phishing_model.pkl',
         '/opt/render/project/src/phishing_model.pkl',
         '/opt/render/project/src/phishing_model.pkl.gz',
-        '/app/app/phishing_model.pkl',
     ]
     
     print("\n=== SEARCHING FOR MODEL FILE ===")
+    sys.stdout.flush()
+    
     for path in possible_paths:
         if os.path.exists(path):
             file_size = os.path.getsize(path)
             print(f"✓ FOUND: {path} (Size: {file_size} bytes)")
+            sys.stdout.flush()
             return path
     
     # If not found in common paths, search entire /app directory
     print("\nSearching entire /app directory...")
+    sys.stdout.flush()
+    
     for root, dirs, files in os.walk('/app'):
         for file in files:
             if file.endswith('.pkl') or file.endswith('.pkl.gz'):
                 full_path = os.path.join(root, file)
                 file_size = os.path.getsize(full_path)
                 print(f"✓ FOUND: {full_path} (Size: {file_size} bytes)")
+                sys.stdout.flush()
                 return full_path
     
     return None
@@ -50,15 +55,20 @@ def load_model_and_scaler():
         print(f"Current working directory: {os.getcwd()}")
         print(f"Python version: {sys.version}")
         print(f"Files in current directory: {os.listdir('.')}")
+        sys.stdout.flush()
         
         # Find model file
         model_path = find_model_file()
         
         if model_path is None:
-            raise FileNotFoundError("Could not find phishing_model.pkl anywhere in the container")
+            error_msg = "Could not find phishing_model.pkl anywhere in the container"
+            print(f"❌ {error_msg}")
+            sys.stdout.flush()
+            raise FileNotFoundError(error_msg)
         
         # Load model (handle compressed files)
         print(f"\nLoading model from: {model_path}")
+        sys.stdout.flush()
         
         if model_path.endswith('.gz'):
             with gzip.open(model_path, 'rb') as f:
@@ -69,12 +79,14 @@ def load_model_and_scaler():
         
         print(f"✓ Model loaded successfully!")
         print(f"  Type: {type(model).__name__}")
+        sys.stdout.flush()
         
         # Get model features
         if hasattr(model, 'n_features_in_'):
             print(f"  Features expected: {model.n_features_in_}")
         elif hasattr(model, 'n_features_'):
             print(f"  Features expected: {model.n_features_}")
+        sys.stdout.flush()
         
         # Try to load scaler
         scaler_path = '/app/scaler.pkl'
@@ -86,13 +98,17 @@ def load_model_and_scaler():
             scaler = DummyScaler()
             print("ℹ️ Using DummyScaler (no scaling)")
         
+        sys.stdout.flush()
         print("="*50 + "\n")
+        sys.stdout.flush()
+        
         return model, scaler
     
     except Exception as e:
         print(f"\n❌ ERROR loading model: {str(e)}")
-        print("="*50 + "\n")
-        logging.error(f"Error loading model/scaler: {str(e)}")
+        import traceback
+        traceback.print_exc(file=sys.stdout)
+        sys.stdout.flush()
         raise
 
 class DummyScaler:
