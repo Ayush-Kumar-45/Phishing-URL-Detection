@@ -2,80 +2,96 @@ import pickle
 import os
 import logging
 import sys
+import gzip
+
+def find_model_file():
+    """Search for model file in all possible locations"""
+    possible_paths = [
+        '/app/phishing_model.pkl',
+        '/app/phishing_model.pkl.gz',
+        '/app/model/phishing_model.pkl',
+        '/app/src/phishing_model.pkl',
+        './phishing_model.pkl',
+        '../phishing_model.pkl',
+        'phishing_model.pkl',
+        '/opt/render/project/src/phishing_model.pkl',
+        '/opt/render/project/src/phishing_model.pkl.gz',
+        '/app/app/phishing_model.pkl',
+    ]
+    
+    print("\n=== SEARCHING FOR MODEL FILE ===")
+    for path in possible_paths:
+        if os.path.exists(path):
+            file_size = os.path.getsize(path)
+            print(f"✓ FOUND: {path} (Size: {file_size} bytes)")
+            return path
+    
+    # If not found in common paths, search entire /app directory
+    print("\nSearching entire /app directory...")
+    for root, dirs, files in os.walk('/app'):
+        for file in files:
+            if file.endswith('.pkl') or file.endswith('.pkl.gz'):
+                full_path = os.path.join(root, file)
+                file_size = os.path.getsize(full_path)
+                print(f"✓ FOUND: {full_path} (Size: {file_size} bytes)")
+                return full_path
+    
+    return None
 
 def load_model_and_scaler():
     """
-    Load the trained phishing detection model with absolute path
+    Load the trained phishing detection model with robust path searching
     """
     try:
-        # Get the absolute path - In Docker, it's usually /app
-        base_dir = '/app'  # Docker container working directory
-        model_path = os.path.join(base_dir, 'phishing_model.pkl')
-        scaler_path = os.path.join(base_dir, 'scaler.pkl')
-        
-        # Print debug info (will show in Render logs)
-        print(f"=== MODEL LOADING DEBUG ===")
+        # Print debug info
+        print("\n" + "="*50)
+        print("MODEL LOADING DEBUG")
+        print("="*50)
         print(f"Current working directory: {os.getcwd()}")
-        print(f"Base directory: {base_dir}")
-        print(f"Model path: {model_path}")
-        print(f"Files in /app: {os.listdir('/app') if os.path.exists('/app') else 'Not found'}")
+        print(f"Python version: {sys.version}")
+        print(f"Files in current directory: {os.listdir('.')}")
         
-        # Check if model file exists
-        if not os.path.exists(model_path):
-            # Try alternative paths
-            alt_paths = [
-                './phishing_model.pkl',
-                '../phishing_model.pkl',
-                'phishing_model.pkl',
-                '/app/phishing_model.pkl'
-            ]
-            
-            for alt_path in alt_paths:
-                if os.path.exists(alt_path):
-                    model_path = alt_path
-                    print(f"Found model at: {model_path}")
-                    break
-            else:
-                # List all files to help debug
-                all_files = []
-                for root, dirs, files in os.walk('/app'):
-                    for file in files:
-                        if file.endswith('.pkl'):
-                            all_files.append(os.path.join(root, file))
-                print(f"All .pkl files found: {all_files}")
-                
-                raise FileNotFoundError(f"Model file not found. Tried: {model_path} and {alt_paths}")
+        # Find model file
+        model_path = find_model_file()
         
-        # Check file size
-        file_size = os.path.getsize(model_path)
-        print(f"Model file size: {file_size} bytes")
+        if model_path is None:
+            raise FileNotFoundError("Could not find phishing_model.pkl anywhere in the container")
         
-        if file_size == 0:
-            raise ValueError(f"Model file is empty: {model_path}")
+        # Load model (handle compressed files)
+        print(f"\nLoading model from: {model_path}")
         
-        # Load model
-        print(f"Loading model from {model_path}")
-        with open(model_path, 'rb') as model_file:
-            model = pickle.load(model_file)
+        if model_path.endswith('.gz'):
+            with gzip.open(model_path, 'rb') as f:
+                model = pickle.load(f)
+        else:
+            with open(model_path, 'rb') as f:
+                model = pickle.load(f)
         
-        print(f"Model loaded successfully. Type: {type(model).__name__}")
+        print(f"✓ Model loaded successfully!")
+        print(f"  Type: {type(model).__name__}")
+        
+        # Get model features
+        if hasattr(model, 'n_features_in_'):
+            print(f"  Features expected: {model.n_features_in_}")
+        elif hasattr(model, 'n_features_'):
+            print(f"  Features expected: {model.n_features_}")
         
         # Try to load scaler
+        scaler_path = '/app/scaler.pkl'
         if os.path.exists(scaler_path) and os.path.getsize(scaler_path) > 0:
-            print(f"Loading scaler from {scaler_path}")
-            with open(scaler_path, 'rb') as scaler_file:
-                scaler = pickle.load(scaler_file)
-            print("Scaler loaded successfully")
+            with open(scaler_path, 'rb') as f:
+                scaler = pickle.load(f)
+            print("✓ Scaler loaded successfully")
         else:
-            # Create a dummy scaler
             scaler = DummyScaler()
-            print("Scaler file not found. Using DummyScaler")
+            print("ℹ️ Using DummyScaler (no scaling)")
         
-        print("=== MODEL LOADING COMPLETE ===")
+        print("="*50 + "\n")
         return model, scaler
     
     except Exception as e:
-        print(f"ERROR loading model: {str(e)}")
+        print(f"\n❌ ERROR loading model: {str(e)}")
+        print("="*50 + "\n")
         logging.error(f"Error loading model/scaler: {str(e)}")
         raise
 
@@ -100,7 +116,6 @@ class DummyScaler:
 def get_model_info():
     """Get information about the loaded model"""
     try:
-        # This is a simplified version - you can expand it
         model, scaler = load_model_and_scaler()
         
         info = {
@@ -108,19 +123,17 @@ def get_model_info():
             'scaler_type': type(scaler).__name__,
         }
         
-        # Try to get model parameters if available
         if hasattr(model, 'get_params'):
             info['model_params'] = str(model.get_params())
         
-        # Get feature count if available
         if hasattr(model, 'n_features_in_'):
             info['n_features_in'] = model.n_features_in_
         elif hasattr(model, 'n_features_'):
             info['n_features_in'] = model.n_features_
-        else:
-            info['n_features_in'] = 'unknown'
+        
+        if hasattr(model, 'classes_'):
+            info['classes'] = str(model.classes_)
         
         return info
     except Exception as e:
-        print(f"Error getting model info: {str(e)}")
         return {'error': str(e)}
