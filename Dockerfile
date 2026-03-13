@@ -1,5 +1,10 @@
 FROM python:3.9-slim
 
+# Set environment variables for better logging
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONIOENCODING=UTF-8
+ENV FLASK_ENV=production
+
 WORKDIR /app
 
 # Install system dependencies
@@ -7,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first
@@ -36,9 +42,10 @@ RUN echo "\n=== CONTAINER FILE STRUCTURE ===" && \
 
 # Set permissions
 RUN chmod -R 755 /app
+RUN chmod 644 /app/phishing_model.pkl 2>/dev/null || echo "Model file not found for chmod"
 
 # Expose port
 EXPOSE 10000
 
-# Run the application
-CMD gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --log-level debug
+# Run the application with unbuffered output
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000", "--workers", "2", "--timeout", "120", "--log-level", "debug", "--access-logfile", "-", "--error-logfile", "-"]
