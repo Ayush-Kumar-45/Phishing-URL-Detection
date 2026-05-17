@@ -177,7 +177,7 @@ All team members collaborated on integration, debugging, and project presentatio
 - pip package manager
 - Git (optional)
 - Virtual environment (recommended)
-
+```bash
 ### Step-by-Step Setup
 phishing-url-detection/
 ├── app.py                          # Main Flask app (Ayush & Pragati)
