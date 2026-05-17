@@ -210,3 +210,204 @@ pip install -r requirements.txt
 
 # Run the application
 python app.py
+#### Linux/Mac
+```bash
+source venv/bin/activate
+```
+
+---
+
+## 3️⃣ Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 4️⃣ Run the Application
+
+```bash
+python app.py
+```
+
+---
+
+## 5️⃣ Open in Browser
+
+```bash
+http://127.0.0.1:5000
+```
+
+---
+
+# 📊 Machine Learning Workflow
+
+1. Data Collection  
+2. Data Preprocessing  
+3. Feature Extraction  
+4. Model Training  
+5. Model Evaluation  
+6. Flask Integration  
+7. Deployment on Render  
+
+---
+
+# 📈 Algorithms Used
+
+- Logistic Regression
+- Random Forest
+- Decision Tree
+- Support Vector Machine (SVM)
+- Naive Bayes
+
+---
+
+# 📷 Screenshots
+
+## Home Page
+_Add project screenshots here_
+
+## Prediction Result
+_Add result screenshots here_
+
+---
+
+# 🌐 Deployment
+
+The project is deployed using **Render**.
+
+### Live Demo
+🔗 https://phishing-url-detection.onrender.com
+
+---
+
+# 📓 Jupyter Notebook
+
+🔗 View on Kaggle
+
+---
+
+# 📚 Dataset
+
+Dataset used for training:
+
+- Web Page Phishing Detection Dataset
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+## Steps to Contribute
+
+1. Fork the repository  
+2. Create a new branch  
+3. Make your changes  
+4. Commit your changes  
+5. Push to your branch  
+6. Create a Pull Request  
+
+---
+
+# 📄 License
+
+MIT License
+
+Copyright (c) 2026 Ayush Kumar, Pragati, Kiran, Shriyanshi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including, without limitation, the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+# 📞 Contact
+
+## 👨‍💻 Team Members
+
+| Name | Role | Roll No | Email | GitHub |
+|------|------|----------|--------|---------|
+| Ayush Kumar | ML Engineer | 2308390100018 | ayush95190@gmail.com |
+| Pragati | ML Engineer | 2308390100046 | pragatitha950@gmail.com | 
+| Kiran | Frontend & Documentation | 2308390100031 | kirangaur1507@gmail.com |
+| Shriyanshi | Frontend & Documentation | 2308390100064 | shriyanshi1712@gmail.com |
+
+> **Note:** Replace placeholder Roll Numbers and email addresses as needed.
+
+---
+
+# 🔗 Project Links
+
+| Resource | Link |
+|----------|------|
+| 📦 GitHub Repository | [https://github.com/yourusername/phishing-url-detection](https://github.com/Ayush-Kumar-45/Phishing-URL-Detection) |
+| 🌐 Live Demo |  |
+| 📓 Jupyter Notebook | View on Kaggle |
+
+---
+
+# 🙏 Acknowledgments
+
+## Resources
+
+| Resource | Purpose |
+|----------|----------|
+| Web Page Phishing Detection Dataset | Training data for the model |
+| Scikit-learn | Machine learning tools and algorithms |
+| Flask | Web framework for the application |
+| Font Awesome | Icons and UI elements |
+| Render | Free hosting and deployment |
+| GitHub | Code hosting and version control |
+
+---
+
+## Inspirations
+
+- OWASP — For cybersecurity guidelines and best practices  
+- Google Safe Browsing — For phishing detection inspiration  
+- PhishTank — For community-driven phishing data  
+
+---
+
+## Special Thanks
+
+- Department of Computer Science and Engineering — For academic support  
+- Project Guide and Mentors — For guidance and feedback  
+- Open Source Community — For tools and libraries  
+- All Contributors and Supporters — For helping improve this project  
+
+---
+
+<div align="center">
+
+# ⭐ Show Your Support
+
+If you found this project helpful, please give it a ⭐ on GitHub!
+
+![Stars](https://img.shields.io/github/stars/yourusername/phishing-url-detection?style=social)
+![Forks](https://img.shields.io/github/forks/yourusername/phishing-url-detection?style=social)
+![Watchers](https://img.shields.io/github/watchers/yourusername/phishing-url-detection?style=social)
+
+Made with by Ayush Kumar, Pragati, Kiran & Shriyanshi
+
+© 2026 Machine Learning-Based Phishing URL Detection System. All Rights Reserved.
+
+⬆ Back to Top
+
+</div>
