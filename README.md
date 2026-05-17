@@ -128,4 +128,69 @@ Users can enter any website URL and get an immediate classification (legitimate 
 
 ## 🏗 System Architecture
 
+
 The system follows a three-tier architecture:
+
+### Model Specifications
+
+| Parameter | Value |
+|-----------|-------|
+| *Algorithm* | Random Forest Classifier |
+| *Accuracy* | 96.2% |
+| *Precision* | 96.1% |
+| *Recall* | 95.8% |
+| *F1-Score* | 95.9% |
+| *AUC-ROC* | 0.98 |
+| *Training Features* | 23 selected features |
+| *Cross-validation* | 5-fold |
+| *Best Parameters* | max_depth: 20, n_estimators: 200 |
+
+### Feature Importance
+| Feature | Importance |
+|---------|------------|
+| google_index | 0.18 |
+| page_rank | 0.15 |
+| nb_www | 0.12 |
+| ratio_digits_url | 0.10 |
+| phish_hints | 0.09 |
+| domain_age | 0.08 |
+
+---
+
+## 👥 Team & Contributions
+
+| Member | Role | Contributions |
+|--------|------|---------------|
+| *Ayush Kumar* | ML Engineer | Model training, feature selection, testing, backend API, deployment (Render) |
+| *Pragati* | ML Engineer | Model training, feature selection, testing, backend API, deployment (Render) |
+| *Kiran* | Frontend Developer & Tech Writer | UI design (HTML/CSS/JS), responsive layout, user manual, documentation |
+| *Shriyanshi* | Frontend Developer & Tech Writer | UI implementation (HTML/CSS/JS), API documentation, testing, final documentation |
+
+All team members collaborated on integration, debugging, and project presentation.
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+- Python 3.8 or higher
+- pip package manager
+- Git (optional)
+- Virtual environment (recommended)
+
+### Step-by-Step Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/phishing-url-detection.git
+cd phishing-url-detection
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate   # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python app.py
