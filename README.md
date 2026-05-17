@@ -179,6 +179,22 @@ All team members collaborated on integration, debugging, and project presentatio
 - Virtual environment (recommended)
 
 ### Step-by-Step Setup
+phishing-url-detection/
+├── app.py                          # Main Flask app (Ayush & Pragati)
+├── requirements.txt
+├── phishing_model.pkl              # Trained ML model (Ayush & Pragati)
+├── Procfile / runtime.txt          # Deployment configs (Ayush & Pragati)
+├── utils/
+│   ├── feature_extractor.py        # 23 features (Ayush & Pragati)
+│   └── model_loader.py
+├── templates/                      # HTML files (Kiran & Shriyanshi)
+│   ├── index.html
+│   ├── about.html
+│   ├── result.html
+│   ├── history.html
+│   └── error.html
+├── static/css/style.css            # Styling (Kiran & Shriyanshi)
+└── notebooks/                      # Training notebook (Ayush & Pragati)
 
 ```bash
 # Clone the repository
