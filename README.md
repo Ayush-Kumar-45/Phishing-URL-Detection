@@ -58,6 +58,54 @@ Help users identify potentially malicious URLs before visiting them, making the 
 ### Scope
 Users can enter any website URL and get an immediate classification (legitimate or phishing) from our machine learning model.
 
+### Workflow
+1. **User enters URL** in the web interface (UI by Kiran & Shriyanshi)
+2. **Flask backend** receives the request (backend by Ayush & Pragati)
+3. **Feature extraction** module analyzes URL (23 features) (ML by Ayush & Pragati)
+4. **ML model** processes features and predicts (trained by Ayush & Pragati)
+5. **Result displayed** with confidence score and recommendations (UI integration by all)
+6. **History stored** in session for future reference
+
+---
+
+## 💻 Tech Stack
+
+### Frontend 
+![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
+![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Font Awesome](https://img.shields.io/badge/Font_Awesome-339AF0?style=for-the-badge&logo=fontawesome&logoColor=white)
+
+### Backend 
+![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-000000?style=for-the-badge&logo=flask&logoColor=white)
+![Gunicorn](https://img.shields.io/badge/Gunicorn-499848?style=for-the-badge&logo=gunicorn&logoColor=white)
+
+### Machine Learning 
+![Scikit-learn](https://img.shields.io/badge/Scikit--learn-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-150458?style=for-the-badge&logo=pandas&logoColor=white)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
+
+### Deployment 
+![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)
+![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
+![Git](https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white)
+
+---
+
+## 📊 Dataset & Model
+
+### Dataset Statistics
+| Attribute | Value |
+|-----------|-------|
+| **Total URLs** | 11,430 |
+| **Classes** | Balanced (50% phishing, 50% legitimate) |
+| **Total Features** | 87 extracted features |
+| **Selected Features** | 23 for final model |
+| **Source** | Web Page Phishing Detection Dataset |
+
+### Feature Categories
+
 ---
 
 ## ✨ Key Features
